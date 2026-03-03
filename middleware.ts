@@ -11,6 +11,7 @@ function isCorsApiPath(pathname: string): boolean {
     pathname === "/api/events" ||
     pathname === "/api/events-page" ||
     pathname === "/api/pages" ||
+    pathname.startsWith("/api/pages/") ||
     pathname.startsWith("/api/media/")
   );
 }
@@ -60,5 +61,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/cms/:path*", "/api/events", "/api/events-page", "/api/pages", "/api/media/:path*"],
+  matcher: ["/cms/:path*", "/api/events", "/api/events-page", "/api/pages", "/api/pages/:path*", "/api/media/:path*"],
 };
