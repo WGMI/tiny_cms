@@ -3,11 +3,32 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  /* End FGM Africa CMS – orange & beige */
+  --primary: #e85d04;
+  --primary-hover: #d35400;
+  --primary-light: #fef3eb;
+  --secondary: #f5f0e6;
+  --secondary-dark: #e8e0d2;
+  --beige-bg: #faf8f5;
+  --sidebar-bg: #2d2d2d;
+  --sidebar-text: #f5f0e6;
+  --sidebar-hover: #3d3d3d;
+  --sidebar-active: #e85d04;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-primary: #e85d04;
+  --color-primary-hover: #d35400;
+  --color-primary-light: #fef3eb;
+  --color-secondary: #f5f0e6;
+  --color-secondary-dark: #e8e0d2;
+  --color-beige-bg: #faf8f5;
+  --color-sidebar-bg: #2d2d2d;
+  --color-sidebar-text: #f5f0e6;
+  --color-sidebar-hover: #3d3d3d;
+  --color-sidebar-active: #e85d04;
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }

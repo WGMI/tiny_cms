@@ -20,6 +20,9 @@
 # production
 /build
 
+# uploaded media (use Vercel Blob or S3 in production)
+/public/uploads
+
 # misc
 .DS_Store
 *.pem
