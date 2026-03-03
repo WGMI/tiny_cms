@@ -15,7 +15,7 @@ function esc(s: string): string {
 export function buildHtmlFromFormData(data: PageFormData, baseUrl: string): string {
   const img = (id: number | null) =>
     id ? `${baseUrl}/api/media/${id}` : "";
-  const personCards = data.people
+  const personCards = (data.people ?? [])
     .map(
       (p: AboutPerson) => `
             <div class="col-xl-4 col-lg-6 col-md-6 col-sm-12 view-wrapper">
@@ -40,12 +40,12 @@ export function buildHtmlFromFormData(data: PageFormData, baseUrl: string): stri
     )
     .join("\n");
 
-  const objectivesList = data.objectives
+  const objectivesList = (data.objectives ?? [])
     .filter(Boolean)
     .map((o) => `<li>${esc(o)}</li>`)
     .join("\n");
 
-  const socialsHtml = data.socials
+  const socialsHtml = (data.socials ?? [])
     .filter((s: AboutSocial) => s.url)
     .map(
       (s) =>

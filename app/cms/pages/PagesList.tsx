@@ -45,9 +45,10 @@ const SECTION_TYPES = [
   { value: "html", label: "Raw HTML" },
 ] as const;
 
-function createEmptySection(
-  type: Section["type"] | "columns2" | "columns3"
-): Section {
+/** Section type plus UI-only options that map to "columns" (2 or 3 cols) */
+type SectionTypeOption = Section["type"] | "columns2" | "columns3";
+
+function createEmptySection(type: SectionTypeOption): Section {
   if (type === "heading") return { type: "heading", level: 2, text: "" };
   if (type === "paragraph") return { type: "paragraph", content: "" };
   if (type === "image") return { type: "image", media_id: 0, alt: "", caption: "" };
@@ -110,7 +111,7 @@ export function PagesList({
     setError("");
   };
 
-  const addSection = (type: Section["type"]) => {
+  const addSection = (type: SectionTypeOption) => {
     setForm((f) => ({ ...f, sections: [...f.sections, createEmptySection(type)] }));
   };
 
@@ -278,7 +279,7 @@ export function PagesList({
                     <button
                       key={value}
                       type="button"
-                      onClick={() => addSection(value as Section["type"] | "columns2" | "columns3")}
+                      onClick={() => addSection(value)}
                       className="rounded border border-primary/50 bg-primary-light px-2 py-1 text-xs font-medium text-primary hover:bg-primary/10"
                     >
                       + {label}
