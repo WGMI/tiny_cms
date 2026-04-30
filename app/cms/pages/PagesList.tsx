@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Section } from "@/lib/pages/types";
 
@@ -27,6 +27,14 @@ interface PagesListProps {
   canUpdate: boolean;
   canDelete: boolean;
 }
+
+interface OriginalSectionBlock {
+  index: number;
+  label: string;
+  innerHtml: string;
+}
+
+const ORIGINAL_SECTION_SLUGS = new Set(["index", "about", "approach"]);
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleString("en-US", {
@@ -62,6 +70,46 @@ function parseSections(s: unknown): Section[] {
   return [];
 }
 
+function allowsOriginalSections(slug: string): boolean {
+  return ORIGINAL_SECTION_SLUGS.has(slug.trim().toLowerCase());
+}
+
+function getOriginalSectionsFromHtml(fullHtml: string): OriginalSectionBlock[] {
+  if (!fullHtml.trim()) return [];
+  const doc = new DOMParser().parseFromString(fullHtml, "text/html");
+  const nodes = Array.from(doc.querySelectorAll("section"));
+  return nodes.map((node, index) => {
+    const id = node.getAttribute("id")?.trim();
+    const classes = (node.getAttribute("class") ?? "")
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .join(".");
+    const label = id
+      ? `#${id}`
+      : classes
+        ? `${node.tagName.toLowerCase()}.${classes}`
+        : `${node.tagName.toLowerCase()} ${index + 1}`;
+    return {
+      index,
+      label,
+      innerHtml: node.innerHTML,
+    };
+  });
+}
+
+function buildHtmlWithOriginalSections(fullHtml: string, blocks: OriginalSectionBlock[]): string {
+  if (!fullHtml.trim()) return fullHtml;
+  const doc = new DOMParser().parseFromString(fullHtml, "text/html");
+  const nodes = Array.from(doc.querySelectorAll("section"));
+  for (const block of blocks) {
+    const target = nodes[block.index];
+    if (!target) continue;
+    target.innerHTML = block.innerHtml;
+  }
+  return `<!DOCTYPE html>\n${doc.documentElement.outerHTML}`;
+}
+
 export function PagesList({
   pages: initialPages,
   media,
@@ -74,7 +122,9 @@ export function PagesList({
   const [creating, setCreating] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [mode, setMode] = useState<"raw" | "sections">("sections");
+  const [mode, setMode] = useState<"raw" | "sections" | "original">("sections");
+  const [originalSourceHtml, setOriginalSourceHtml] = useState("");
+  const [originalSections, setOriginalSections] = useState<OriginalSectionBlock[]>([]);
   const [form, setForm] = useState({
     slug: "",
     title: "",
@@ -86,6 +136,8 @@ export function PagesList({
     setCreating(true);
     setEditing(null);
     setMode("sections");
+    setOriginalSourceHtml("");
+    setOriginalSections([]);
     setForm({ slug: "", title: "", full_html: "", sections: [] });
     setError("");
   };
@@ -96,6 +148,9 @@ export function PagesList({
     const sections = parseSections(p.sections);
     const hasSections = sections.length > 0;
     setMode(hasSections ? "sections" : "raw");
+    const sourceHtml = p.full_html ?? "";
+    setOriginalSourceHtml(sourceHtml);
+    setOriginalSections(allowsOriginalSections(p.slug) ? getOriginalSectionsFromHtml(sourceHtml) : []);
     setForm({
       slug: p.slug,
       title: p.title ?? "",
@@ -110,6 +165,12 @@ export function PagesList({
     setEditing(null);
     setError("");
   };
+
+  useEffect(() => {
+    if (!allowsOriginalSections(form.slug) && mode === "original") {
+      setMode("sections");
+    }
+  }, [form.slug, mode]);
 
   const addSection = (type: SectionTypeOption) => {
     setForm((f) => ({ ...f, sections: [...f.sections, createEmptySection(type)] }));
@@ -156,6 +217,18 @@ export function PagesList({
           setSaving(false);
           return;
         }
+      } else if (mode === "original") {
+        if (!allowsOriginalSections(form.slug)) {
+          setError("Original Sections is only available for slug 'index', 'about', or 'approach'");
+          setSaving(false);
+          return;
+        }
+        if (originalSections.length === 0) {
+          setError("No <section> blocks found in the original HTML");
+          setSaving(false);
+          return;
+        }
+        payload.full_html = buildHtmlWithOriginalSections(originalSourceHtml, originalSections);
       } else {
         payload.full_html = form.full_html;
       }
@@ -268,6 +341,15 @@ export function PagesList({
             >
               Raw HTML
             </button>
+            {allowsOriginalSections(form.slug) && (
+              <button
+                type="button"
+                onClick={() => setMode("original")}
+                className={`rounded px-3 py-1.5 text-sm font-medium ${mode === "original" ? "bg-primary text-white" : "bg-secondary/50 text-zinc-600"}`}
+              >
+                Original sections
+              </button>
+            )}
           </div>
 
           {mode === "sections" ? (
@@ -305,6 +387,43 @@ export function PagesList({
                   </p>
                 )}
               </div>
+            </div>
+          ) : mode === "original" ? (
+            <div className="mt-4 space-y-3">
+              <p className="text-sm text-zinc-600">
+                Edit only the content inside each original <code>&lt;section&gt;</code>. Outer page layout remains untouched.
+              </p>
+              {originalSections.length === 0 ? (
+                <p className="rounded-lg border border-dashed border-secondary-dark bg-secondary/20 px-3 py-4 text-sm text-zinc-500">
+                  No section blocks found. Switch to Raw HTML if you need to edit the whole document.
+                </p>
+              ) : (
+                originalSections.map((block, index) => (
+                  <details key={block.index} className="rounded-lg border border-secondary-dark bg-secondary/10 p-3">
+                    <summary className="cursor-pointer text-sm font-medium text-zinc-700">
+                      Section {index + 1}: {block.label}
+                    </summary>
+                    <div className="mt-2">
+                      <label className="mb-1 block text-xs font-medium text-zinc-500">Inner HTML</label>
+                      <textarea
+                        value={block.innerHtml}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          setOriginalSections((prev) =>
+                            prev.map((item) =>
+                              item.index === block.index
+                                ? { ...item, innerHtml: value }
+                                : item
+                            )
+                          );
+                        }}
+                        rows={10}
+                        className="w-full rounded border border-secondary-dark bg-white px-3 py-2 font-mono text-sm text-zinc-800 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                      />
+                    </div>
+                  </details>
+                ))
+              )}
             </div>
           ) : (
             <div className="mt-4">
