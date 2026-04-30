@@ -57,6 +57,7 @@ ON CONFLICT (name) DO NOTHING;
 -- Permissions
 INSERT INTO permissions (resource, action) VALUES
   ('pages', 'create'), ('pages', 'read'), ('pages', 'update'), ('pages', 'delete'),
+  ('static_pages', 'create'), ('static_pages', 'read'), ('static_pages', 'update'), ('static_pages', 'delete'),
   ('events', 'create'), ('events', 'read'), ('events', 'update'), ('events', 'delete'),
   ('media', 'create'), ('media', 'read'), ('media', 'update'), ('media', 'delete'),
   ('users', 'create'), ('users', 'read'), ('users', 'update'), ('users', 'delete'),
@@ -71,7 +72,7 @@ ON CONFLICT DO NOTHING;
 -- Editor: pages, events, media
 INSERT INTO role_permissions (role_id, permission_id)
 SELECT '11111111-1111-1111-1111-111111111102'::uuid, id FROM permissions
-WHERE resource IN ('pages', 'events', 'media')
+WHERE resource IN ('pages', 'static_pages', 'events', 'media')
 ON CONFLICT DO NOTHING;
 
 -- Viewer: read only
@@ -119,6 +120,16 @@ CREATE TABLE IF NOT EXISTS pages (
   title TEXT,
   full_html TEXT NOT NULL,
   sections JSONB,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Static pages (raw HTML only)
+CREATE TABLE IF NOT EXISTS static_pages (
+  id SERIAL PRIMARY KEY,
+  slug TEXT UNIQUE NOT NULL,
+  title TEXT,
+  full_html TEXT NOT NULL,
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()
 );

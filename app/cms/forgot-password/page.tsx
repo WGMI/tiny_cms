@@ -1,35 +1,39 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useState } from "react";
 
-export default function LoginPage() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const from = searchParams.get("from") ?? "/cms";
+export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [code, setCode] = useState("");
+  const [newPassword, setNewPassword] = useState("");
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+    setSuccess("");
     setLoading(true);
+
     try {
-      const res = await fetch("/api/auth/login", {
+      const res = await fetch("/api/auth/forgot-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, code, newPassword }),
       });
       const data = await res.json();
+
       if (!res.ok) {
-        setError(data.error ?? "Login failed");
+        setError(data.error ?? "Password reset failed");
         return;
       }
-      router.push(from);
-      router.refresh();
+
+      setSuccess("Password reset successful. You can sign in now.");
+      setEmail("");
+      setCode("");
+      setNewPassword("");
     } catch {
       setError("Something went wrong");
     } finally {
@@ -38,7 +42,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-beige-bg px-4">
+    <div className="flex min-h-screen items-center justify-center bg-beige-bg px-4 py-12">
       <div className="w-full max-w-md">
         <div className="rounded-2xl border border-secondary-dark bg-white p-8 shadow-md">
           <div className="mb-8 flex items-center justify-center gap-2">
@@ -48,14 +52,21 @@ export default function LoginPage() {
             </h1>
           </div>
           <h2 className="mb-6 text-center text-lg font-semibold text-zinc-700">
-            Sign in to your account
+            Reset your password
           </h2>
+
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             {error && (
               <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
                 {error}
               </div>
             )}
+            {success && (
+              <div className="rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700">
+                {success}
+              </div>
+            )}
+
             <div>
               <label
                 htmlFor="email"
@@ -73,46 +84,58 @@ export default function LoginPage() {
                 className="w-full rounded-lg border border-secondary-dark bg-secondary/20 px-3 py-2.5 text-zinc-800 placeholder:text-zinc-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
               />
             </div>
+
             <div>
               <label
-                htmlFor="password"
+                htmlFor="code"
                 className="mb-1 block text-sm font-medium text-zinc-700"
               >
-                Password
+                Reset code
               </label>
               <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                id="code"
+                type="text"
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
                 required
-                autoComplete="current-password"
+                inputMode="numeric"
+                className="w-full rounded-lg border border-secondary-dark bg-secondary/20 px-3 py-2.5 text-zinc-800 placeholder:text-zinc-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                placeholder="Enter the code"
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor="newPassword"
+                className="mb-1 block text-sm font-medium text-zinc-700"
+              >
+                New password (min 8 characters)
+              </label>
+              <input
+                id="newPassword"
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                required
+                minLength={8}
+                autoComplete="new-password"
                 className="w-full rounded-lg border border-secondary-dark bg-secondary/20 px-3 py-2.5 text-zinc-800 placeholder:text-zinc-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
               />
             </div>
+
             <button
               type="submit"
               disabled={loading}
               className="mt-2 w-full rounded-lg bg-primary py-2.5 font-medium text-white transition-colors hover:bg-primary-hover disabled:opacity-50"
             >
-              {loading ? "Signing in…" : "Sign in"}
+              {loading ? "Resetting…" : "Reset password"}
             </button>
-            <div className="text-right">
-              <Link
-                href="/cms/forgot-password"
-                className="text-sm font-medium text-primary hover:underline"
-              >
-                Forgot password?
-              </Link>
-            </div>
           </form>
+
           <p className="mt-6 text-center text-sm text-zinc-600">
-            No account?{" "}
-            <Link
-              href="/cms/register"
-              className="font-medium text-primary hover:underline"
-            >
-              Register
+            Remembered your password?{" "}
+            <Link href="/cms/login" className="font-medium text-primary hover:underline">
+              Sign in
             </Link>
           </p>
         </div>

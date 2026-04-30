@@ -3,15 +3,14 @@ import type { NextRequest } from "next/server";
 
 const CMS_PROTECTED_PREFIX = "/cms/";
 
-// Public API routes that may be fetched from another origin (e.g. main site)
-const CORS_API_PATHS = ["/api/events", "/api/events-page", "/api/media"];
-
 function isCorsApiPath(pathname: string): boolean {
   return (
     pathname === "/api/events" ||
     pathname === "/api/events-page" ||
     pathname === "/api/pages" ||
     pathname.startsWith("/api/pages/") ||
+    pathname === "/api/static-pages" ||
+    pathname.startsWith("/api/static-pages/") ||
     pathname.startsWith("/api/media/")
   );
 }
@@ -42,11 +41,15 @@ export function middleware(request: NextRequest) {
     return response;
   }
 
-  // CMS auth: only apply to /cms routes (except login/register)
+  // CMS auth: only apply to /cms routes (except login/register/forgot-password)
   if (!pathname.startsWith(CMS_PROTECTED_PREFIX)) {
     return NextResponse.next();
   }
-  if (pathname === "/cms/login" || pathname === "/cms/register") {
+  if (
+    pathname === "/cms/login" ||
+    pathname === "/cms/register" ||
+    pathname === "/cms/forgot-password"
+  ) {
     return NextResponse.next();
   }
 
@@ -61,5 +64,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/cms/:path*", "/api/events", "/api/events-page", "/api/pages", "/api/pages/:path*", "/api/media/:path*"],
+  matcher: ["/cms/:path*", "/api/events", "/api/events-page", "/api/pages", "/api/pages/:path*", "/api/static-pages", "/api/static-pages/:path*", "/api/media/:path*"],
 };

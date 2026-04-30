@@ -11,6 +11,13 @@ const cards = [
     icon: "▸",
   },
   {
+    href: "/cms/static-pages",
+    label: "Static Pages",
+    description: "Manage raw HTML static pages",
+    permission: "static_pages",
+    icon: "▹",
+  },
+  {
     href: "/cms/events",
     label: "Events",
     description: "Manage events and calendar",

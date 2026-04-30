@@ -2,6 +2,7 @@ import type { PermissionKey } from "./types";
 
 export const RESOURCES = [
   "pages",
+  "static_pages",
   "events",
   "media",
   "users",
