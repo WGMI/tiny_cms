@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sql } from "@/lib/db";
+import { sectionsToHtml } from "@/lib/pages/sections-to-html";
+import type { Section } from "@/lib/pages/types";
 
 interface StaticPagePublic {
   id: number;
@@ -9,6 +11,35 @@ interface StaticPagePublic {
   full_html: string;
   created_at: string;
   updated_at: string;
+}
+
+function parseSections(fullHtmlRaw: string): Section[] {
+  try {
+    const parsed = JSON.parse(fullHtmlRaw) as unknown;
+    if (!Array.isArray(parsed)) return [];
+    return parsed as Section[];
+  } catch {
+    return [];
+  }
+}
+
+function getImageMediaIds(sections: Section[]): number[] {
+  const ids: number[] = [];
+  for (const s of sections) {
+    if (s.type === "image" && s.media_id) ids.push(s.media_id);
+  }
+  return ids;
+}
+
+async function resolveMediaUrls(mediaIds: number[]): Promise<Record<number, string>> {
+  if (mediaIds.length === 0) return {};
+  const ids = [...new Set(mediaIds)];
+  const rows = await sql`SELECT id, path FROM media WHERE id = ANY(${ids})`;
+  const map: Record<number, string> = {};
+  for (const r of rows as { id: number; path: string }[]) {
+    map[r.id] = r.path;
+  }
+  return map;
 }
 
 export async function GET(request: NextRequest) {
@@ -39,12 +70,17 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ docs: [] });
     }
 
+    const sections = parseSections(row.full_html);
+    const mediaIds = getImageMediaIds(sections);
+    const mediaUrls = await resolveMediaUrls(mediaIds);
+    const builtHtml = sectionsToHtml(sections, mediaUrls, row.title);
+
     const doc: StaticPagePublic = {
       id: row.id,
       slug: row.slug,
       title: row.title,
-      fullHtml: row.full_html,
-      full_html: row.full_html,
+      fullHtml: builtHtml,
+      full_html: builtHtml,
       created_at: row.created_at,
       updated_at: row.updated_at,
     };

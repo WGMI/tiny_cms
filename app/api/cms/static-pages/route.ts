@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth/require-auth";
 import { sql } from "@/lib/db";
+import type { Section } from "@/lib/pages/types";
+
+function isValidSections(value: unknown): value is Section[] {
+  return Array.isArray(value) && value.length > 0;
+}
 
 export async function GET() {
   const auth = await requireAuth({ permission: { resource: "static_pages", action: "read" } });
@@ -31,14 +36,15 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const slug = body.slug?.trim();
     const title = body.title?.trim() ?? null;
-    const full_html = body.full_html ?? body.fullHtml ?? "";
+    const sections = body.sections;
 
     if (!slug) {
       return NextResponse.json({ error: "slug is required" }, { status: 400 });
     }
-    if (typeof full_html !== "string") {
-      return NextResponse.json({ error: "full_html is required" }, { status: 400 });
+    if (!isValidSections(sections)) {
+      return NextResponse.json({ error: "sections are required" }, { status: 400 });
     }
+    const full_html = JSON.stringify(sections);
 
     const rows = await sql`
       INSERT INTO static_pages (slug, title, full_html)

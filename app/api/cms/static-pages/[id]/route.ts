@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth/require-auth";
 import { sql } from "@/lib/db";
+import type { Section } from "@/lib/pages/types";
+
+function isValidSections(value: unknown): value is Section[] {
+  return Array.isArray(value) && value.length > 0;
+}
 
 export async function PATCH(
   request: NextRequest,
@@ -28,15 +33,17 @@ export async function PATCH(
     const body = await request.json();
     const slug = body.slug !== undefined ? body.slug?.trim() : existing.slug;
     const title = body.title !== undefined ? (body.title?.trim() ?? null) : existing.title;
-    const full_html = body.full_html ?? body.fullHtml ?? existing.full_html;
+    let full_html = existing.full_html;
+    if (body.sections !== undefined) {
+      if (!isValidSections(body.sections)) {
+        return NextResponse.json({ error: "sections must be a non-empty array" }, { status: 400 });
+      }
+      full_html = JSON.stringify(body.sections as Section[]);
+    }
 
     if (slug !== undefined && !slug) {
       return NextResponse.json({ error: "slug cannot be empty" }, { status: 400 });
     }
-    if (typeof full_html !== "string") {
-      return NextResponse.json({ error: "full_html must be a string" }, { status: 400 });
-    }
-
     await sql`
       UPDATE static_pages
       SET slug = ${slug}, title = ${title}, full_html = ${full_html}, updated_at = now()

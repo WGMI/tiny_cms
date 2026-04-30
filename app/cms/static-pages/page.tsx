@@ -23,6 +23,7 @@ export default async function CmsStaticPagesPage() {
     FROM static_pages
     ORDER BY slug
   `;
+  const mediaList = await sql`SELECT id, path, filename FROM media ORDER BY id DESC`;
 
   const canCreate = hasPermission(session.permissions, "static_pages", "create");
   const canUpdate = hasPermission(session.permissions, "static_pages", "update");
@@ -32,10 +33,11 @@ export default async function CmsStaticPagesPage() {
     <div>
       <h1 className="text-2xl font-bold text-zinc-800">Static Pages</h1>
       <p className="mt-1 text-zinc-600">
-        Manage raw HTML static pages. Consumer loads by slug.
+        Build static pages with editable sections. Section JSON is stored and converted to HTML in the public API.
       </p>
       <StaticPagesList
         pages={pagesList as { id: number; slug: string; title: string | null; full_html: string; created_at: string; updated_at: string }[]}
+        media={mediaList as { id: number; path: string; filename: string | null }[]}
         canCreate={canCreate}
         canUpdate={canUpdate}
         canDelete={canDelete}
